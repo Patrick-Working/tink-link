@@ -3,6 +3,8 @@ Device to send serial commands to the RetroTINK-4K HD15 data input, using a RPi 
 
 Dependancies:
 
+MicroPython - https://micropython.org/
+
 MicroDOT - https://github.com/miguelgrinberg/microdot/tags
 
 Skeleton - http://getskeleton.com/
