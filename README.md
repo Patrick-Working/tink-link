@@ -1,4 +1,6 @@
 # tink-link
+===this currently does not work at all and is a work in progress===
+
 Device to send serial commands to the RetroTINK-4K HD15 data input, using a RPi Pico W Web Server.
 
 Dependancies:
