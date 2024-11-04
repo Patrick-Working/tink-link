@@ -3,7 +3,11 @@
 Device to send serial commands to the RetroTINK-4K HD15 data input, using a RPi Pico W Web Server.
 
 Note that while the latest version is tested working (barely), This is a work in progress and more functionality / documentation is on the way.
+
+
 <img src="https://github.com/Patrick-Working/tink-link/blob/main/PXL_20241104_022657857.jpg" alt="Alt Text" width="300" height="200">
+
+
 Dependencies:
 
 MicroPython - https://micropython.org/
