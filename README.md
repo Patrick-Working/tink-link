@@ -17,9 +17,13 @@ How it works:
 Using a Wi-Fi-enabled smart device or computer, you connect to a locally hosted hot spot created by the Pico W. Once connected, navigating to the Tink Link web page will give you the option to enter serial terminal commands. The Pico translates submitted text commands to a UART GPIO data transmission. When interfaced to the HD15 data input of the RetroTINK-4K Tink LINK can simulate remote control command inputs.
 
 Pinout for Pico to HD-15:
+
 pin0 on Pico -> VGA pin 15 - Tink4K RX
+
 pin1 on Pico -> VGA pin 12 - Tink4K TX
+
 pin3 on Pico (Pico GND) -> VGA Outer GND + VGA Pin 5 (HSync GND)
+
 
 To use:
 Install MicroPython onto the RPi Pico W. Copy over the Tink Link main.py, as well as add Microdot.py and skeleton.css dependencies to the root of the Pico W. Wire connections to the HD-15 port as described in the above configuration and power on Pico W. When Pico W is powered up, log into Tink Link hotspot. Connect to 192.168.1.4 in a browser. Send commands to the Tink!
