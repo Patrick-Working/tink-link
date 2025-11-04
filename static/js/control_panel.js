@@ -345,7 +345,7 @@ function formToJson(formName) {
     form = getElement(formName);
     formData = new FormData(form);
     formData.forEach(function(value, key) {
-        object[key] = value;
+        object[key] = JSON.parse(value);
     });
 
     var parent = {};
