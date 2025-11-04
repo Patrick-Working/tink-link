@@ -279,10 +279,14 @@ async def save_config(request):
 
     data = config.get_config()
     payload = request.json
-    print(payload)
+
+    key = payload["formName"]
+
     try:
-        key = payload["formName"]
-        data[key] = payload[key]
+        if key == "triggers":
+            data["switchers"][0]["triggers"] = payload["triggers"]
+        else:
+            data[key] = payload[key]
 
         config.write_config(data)
     except Exception as e:

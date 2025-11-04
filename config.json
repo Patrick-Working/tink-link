@@ -14,38 +14,69 @@
         "captivePortalEnabled": true
     },
     "wirelessClient":{
-        "ssid": "my-network",
-        "password": "my-password",
+        "ssid": "NotSpeedy",
+        "password": "sze64vtodvryijyl",
         "hostname": "tinklink"
     },
     "tcpServer":{
-        "enabled": true,
+        "enabled": false,
         "port": 8023
     },
     "switchers": [{
-        "enabled": false,
-        "type": "ExtronMavCp",
+        "enabled": true,
+        "type": "MAV/Crosspoint",
         "name": "Extron CrossPoint",
+        "extron-connection": "telnet",
         "connection": {
-            "host": "192.168.0.97",
+            "hostname": "192.168.0.97",
             "port": 23,
             "username": "",
             "password": "",
-            "initString": "W1CV"
+            "init_string": "W1CV"
         },
         "triggers": [{
             "name": "NES",
-            "preset": 2,
+            "preset": 1,
             "mode": "SVS",
             "profile": 1
         },{
             "name":"Super Nintendo",
             "preset": 2,
             "mode": "Remote",
-            "profle": 2
+            "profile": 2
+        },{
+            "name":"Sega Gensis",
+            "preset": 3,
+            "mode": "Remote",
+            "profile": 3
+        },{
+            "name":"Nintendo Wii",
+            "preset": 4,
+            "mode": "Remote",
+            "profile": 4
+        },{
+            "name":"PlayStation 2",
+            "preset": 5,
+            "mode": "Remote",
+            "profile": 5
+        },{
+            "name":"GameCube",
+            "preset": 6,
+            "mode": "Remote",
+            "profile": 6
+        },{
+            "name":"Dreamcast",
+            "preset": 7,
+            "mode": "Remote",
+            "profile": 7
+        },{
+            "name":"Nintendo 64",
+            "preset": 8,
+            "mode": "Remote",
+            "profile": 8
         }]
     },{
-        "enabled": true,
+        "enabled": false,
         "type": "ExtronSwVga",
         "name": "Extron SW VGA",
         "connection": {
