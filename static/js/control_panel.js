@@ -1,3 +1,8 @@
+// Globals
+var triggerKeys = ["name", "preset", "mode", "profile"];
+var PROFILE_KEYS = 12;
+var TRIGGER_PRESETS = 6;
+
 function getValueForId(id) {
     return document.getElementById(id).value;
 }
@@ -56,9 +61,19 @@ function addEventListeners() {
       updateConfig("tcpServer");
     });
 
+    getElement("telnet-submit").addEventListener("click", function(event) {
+      event.preventDefault();
+      updateConfig("telnet");
+    });
+
+    getElement("trigger-submit").addEventListener("click", function(event) {
+        event.preventDefault();
+        updateConfig("trigger-form");
+    });
+
     getElement("add-trigger").addEventListener("click", function() {
         addTrigger("triggers", null);
-});
+    });
 }
 
 async function fetchConfig() {
@@ -85,6 +100,10 @@ async function fetchConfig() {
             if(data.switchers[s].enabled) {
                 var i = 1;
 
+                for(const [key, value] of Object.entries(data.switchers[s].connection)) {
+                    getElement(`connection-${key}`).value = value;
+                }
+
                 for(const [key, value] of Object.entries(data.switchers[s].triggers)) {
 
                     // ugly way to only create if this exists
@@ -92,11 +111,9 @@ async function fetchConfig() {
                     if(x === null) {
                         addTrigger("triggers", i);
                     }
-
-                    getElement(`trigger-${i}-name`).value = value.name;
-                    getElement(`trigger-${i}-preset`).value = value.preset;
-                    getElement(`trigger-${i}-mode`).value = value.mode;
-                    getElement(`trigger-${i}-profile`).value = value.profile;
+                    triggerKeys.forEach(function(key) {
+                        getElement(`trigger-${i}-${key}`).value = value[key];
+                    });
                     
                     ++i;
                 }
@@ -107,6 +124,10 @@ async function fetchConfig() {
     .catch(error => {
         console.error(`Got this error ${error}`)
     });
+
+    // Determine whether to show serial/telnet for the Extron, regardless
+    // of whether the above works.
+    toggleSerialTelnet();
 }
 
 async function networkChange(path, localBody) {
@@ -239,7 +260,7 @@ async function updateConfig(formName) {
 
     const request = new Request(path, {
         method: "POST",
-        body: formToJson(formName),
+        body: formName != "trigger-form" ? formToJson(formName) : triggersToJson(),
         headers: headers
     });
 
@@ -280,13 +301,14 @@ function addTrigger(t, num) {
 
     if(num === null) {
         num = document.getElementsByClassName("trigger-count").length;
-        num = Math.max(num, 1);
+        num = Math.max(num, 1) + 1;
     }
 
     triggerRow = getElement(t);
 
     let name = document.createElement("input");
     name.id = `trigger-${num}-name`;
+    name.className += "trigger-count";
     name.name = name.id;
     name.type = "text";
 
@@ -295,13 +317,13 @@ function addTrigger(t, num) {
     let triggerPreset = document.createElement("select");
     triggerPreset.id = `trigger-${num}-preset`;
     triggerPreset.name = triggerPreset.id;
-    Array(6).keys().forEach(i => {
+    Array(TRIGGER_PRESETS).keys().forEach(i => {
         triggerPreset.append(createOption(i + 1, `Preset ${i + 1}`));
     });
 
     triggerRow.appendChild(triggerPreset);
 
-    let triggerMode = document.createElement("select")
+    let triggerMode = document.createElement("select");
     triggerMode.id = `trigger-${num}-mode`;
     triggerMode.name = triggerMode.id;
     triggerMode.append(createOption("Remote", "Remote"));
@@ -311,7 +333,7 @@ function addTrigger(t, num) {
     let triggerProfile = document.createElement("select");
     triggerProfile.id = `trigger-${num}-profile`;
     triggerProfile.name = triggerProfile.id;
-    Array(12).keys().forEach(i => {
+    Array(PROFILE_KEYS).keys().forEach(i => {
         triggerProfile.appendChild(createOption(i + 1, `Profile ${i + 1}`));
     });
 
@@ -323,12 +345,35 @@ function formToJson(formName) {
     form = getElement(formName);
     formData = new FormData(form);
     formData.forEach(function(value, key) {
-        object[key] = JSON.parse(value);
+        object[key] = value;
     });
 
     var parent = {};
     parent.formName = formName;
     parent[formName] = object;
+    return JSON.stringify(parent);
+}
+
+/*
+    Dump all triggers to a JSON string object.
+*/
+function triggersToJson() {
+    var array = [];
+
+    for(var i = 1; i <= getElement("triggers").childNodes.length / triggerKeys.length; ++i) {
+        
+        var object = {};
+        triggerKeys.forEach(function(key) {
+            object[key] = getValueForId(`trigger-${i}-${key}`);
+        });
+
+        array.push(object);
+    }
+
+    var parent = {};
+    parent.formName = "triggers";
+    parent["triggers"] = array;
+
     return JSON.stringify(parent);
 }
 
