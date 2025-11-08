@@ -1,7 +1,7 @@
 // Globals
 var triggerKeys = ["name", "preset", "mode", "profile"];
 var PROFILE_KEYS = 12;
-var TRIGGER_PRESETS = 6;
+var TRIGGER_PRESETS = 12;
 
 function getValueForId(id) {
     return document.getElementById(id).value;
@@ -29,6 +29,10 @@ function addEventListeners() {
 
     getElement("loading-message").style.display = 'none';
     getElement("message-box").style.display = 'none';
+
+    getElement("connection-connection_type").addEventListener("click", function(event) {
+        toggleSerialTelnet();
+    });
 
     getElement("disconnect-button").addEventListener("click", function(event) {
       event.preventDefault();
@@ -61,9 +65,9 @@ function addEventListeners() {
       updateConfig("tcpServer");
     });
 
-    getElement("telnet-submit").addEventListener("click", function(event) {
+    getElement("connection-submit").addEventListener("click", function(event) {
       event.preventDefault();
-      updateConfig("telnet");
+      updateConfig("switcher");
     });
 
     getElement("trigger-submit").addEventListener("click", function(event) {
@@ -92,7 +96,12 @@ async function fetchConfig() {
         for(var i in masterKeys) {
             k = masterKeys[i];
             for(const [key, value] of Object.entries(data[k])) {
-                getElement(`${k}-${key}`).value = value;
+                if(k == "switchers") {
+                    getElement(`${k}-${key}`)[0].value = value;
+                }
+                else {
+                    getElement(`${k}-${key}`).value = value;
+                }
             }
         }
 
@@ -100,8 +109,22 @@ async function fetchConfig() {
             if(data.switchers[s].enabled) {
                 var i = 1;
 
-                for(const [key, value] of Object.entries(data.switchers[s].connection)) {
-                    getElement(`connection-${key}`).value = value;
+                getElement("connection-enabled").value = data.switchers[s].enabled;
+                getElement("connection-connection_type").value = data.switchers[s].connection_type;
+                getElement("connection-type").value = data.switchers[s].type;
+                getElement("connection-name").value = data.switchers[s].name;
+                
+                if(data.switchers[s].connection_type == "telnet") {
+                    getElement("connection-hostname").value = data.switchers[s].connection.hostname;
+                    getElement("connection-port").value = data.switchers[s].connection.port;
+                    getElement("connection-username").value = data.switchers[s].connection.username;
+                    getElement("connection-password").value = data.switchers[s].connection.password;
+                    getElement("connection-init_string").value = data.switchers[s].connection.init_string;
+                }
+                else {
+                    getElement("connection-txPin").value = data.switchers[s].connection.txPin;
+                    getElement("connection-rxPin").value = data.switchers[s].connection.rxPin;
+                    getElement("connection-uartId").value = data.switchers[s].connection.uartId;
                 }
 
                 for(const [key, value] of Object.entries(data.switchers[s].triggers)) {
@@ -120,14 +143,14 @@ async function fetchConfig() {
             }
         }
 
+        // Determine whether to show serial/telnet for the Extron, regardless
+        // of whether the above works.
+        toggleSerialTelnet();
+
     })
     .catch(error => {
         console.error(`Got this error ${error}`)
     });
-
-    // Determine whether to show serial/telnet for the Extron, regardless
-    // of whether the above works.
-    toggleSerialTelnet();
 }
 
 async function networkChange(path, localBody) {
@@ -254,13 +277,26 @@ async function populateNetworks() {
 
 async function updateConfig(formName) {
 
-    path = "/save-config"
+    path = "/save-config";
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
 
+    var body = "";
+    switch(formName) {
+        case("trigger-form"):
+            body = triggersToJson();
+            break;
+        case("switcher"):
+            body = formToSwitcherConfig();
+            break;
+        default:
+            body = formToJson(formName);
+            break;
+    }
+
     const request = new Request(path, {
         method: "POST",
-        body: formName != "trigger-form" ? formToJson(formName) : triggersToJson(),
+        body: body,
         headers: headers
     });
 
@@ -301,7 +337,7 @@ function addTrigger(t, num) {
 
     if(num === null) {
         num = document.getElementsByClassName("trigger-count").length;
-        num = Math.max(num, 1) + 1;
+        num = num == 0 ? 1 : Math.max(num, 1) + 1;
     }
 
     triggerRow = getElement(t);
@@ -340,12 +376,70 @@ function addTrigger(t, num) {
     triggerRow.appendChild(triggerProfile);
 }
 
+function formToObject(formData) {
+    var object = {};
+
+    formData.forEach(function(value, key) {
+        try {
+            if(!isNaN(value)) {
+                object[key] = JSON.parse(value);
+            }
+            else {
+                object[key] = value;
+            }
+        }
+        catch {
+            console.log(`Failing on ${key} for ${value}`);
+        }
+    });
+
+    return object;
+}
+
+function formToSwitcherConfig() {
+    var object = {};
+
+    object.enabled = JSON.parse(getValueForId("connection-enabled"));
+    object.type = getValueForId("connection-type");
+    object.name = getValueForId("connection-name");
+    object.connection_type = getValueForId("connection-connection_type");
+    object.connection = {};
+
+    if(object.connection_type == "serial") {
+        object.connection.txPin = JSON.parse(getValueForId(("connection-txPin")));
+        object.connection.rxPin = JSON.parse(getValueForId(("connection-rxPin")));
+        object.connection.uartId = JSON.parse(getValueForId(("connection-uartId")));
+    }
+    else {
+        object.connection.hostname = getValueForId("connection-hostname");
+        object.connection.port = JSON.parse(getValueForId("connection-port"));
+        object.connection.username = getValueForId("connection-username");
+        object.connection.password = getValueForId("connection-password");
+        object.connection.init_string = getValueForId("connection-init_string");
+    }
+
+    var parent = {};
+    parent.formName = "switcher";
+    parent["switcher"] = object;
+    return JSON.stringify(parent);
+}
+
 function formToJson(formName) {
     var object = {};
     form = getElement(formName);
     formData = new FormData(form);
     formData.forEach(function(value, key) {
-        object[key] = JSON.parse(value);
+        try {
+            if(!isNaN(value)) {
+                object[key] = JSON.parse(value);
+            }
+            else {
+                object[key] = value;
+            }
+        }
+        catch {
+            console.log(`Failing on ${key} for ${value}`);
+        }
     });
 
     var parent = {};
@@ -364,7 +458,13 @@ function triggersToJson() {
         
         var object = {};
         triggerKeys.forEach(function(key) {
-            object[key] = getValueForId(`trigger-${i}-${key}`);
+            value = getValueForId(`trigger-${i}-${key}`);
+            if(!isNaN(value)) {
+                object[key] = JSON.parse(value);
+            }
+            else {
+                object[key] = value;
+            }
         });
 
         array.push(object);
@@ -393,7 +493,7 @@ function toggle() {
 }
 
 function toggleSerialTelnet() {
-    var ec = getElement("extron-connection").value;
+    var ec = getElement("connection-connection_type").value;
 
     getElement("extron-serial").style.display = (ec === "serial") ? '' : 'none';
     getElement("extron-telnet").style.display = (ec === "telnet") ? '' : 'none';
