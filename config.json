@@ -14,8 +14,8 @@
         "captivePortalEnabled": true
     },
     "wirelessClient":{
-        ***REMOVED***,
-        ***REMOVED***,
+        "ssid": "my-network",
+        "password": "my-password",
         "hostname": "tinklink"
     },
     "tcpServer":{
