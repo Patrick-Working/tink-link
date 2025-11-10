@@ -279,14 +279,25 @@ async def save_config(request):
 
     data = config.get_config()
     payload = request.json
-    print(payload)
+
+    key = payload["formName"]
     try:
-        key = payload["formName"]
-        data[key] = payload[key]
+        if key == "triggers":
+            data["switchers"][0][key] = payload[key]
+        elif key == "switcher":
+            data["switchers"][0]["connection"] = payload[key]["connection"]
+            data["switchers"][0]["enabled"] = payload[key]["enabled"]
+            data["switchers"][0]["type"] = payload[key]["type"]
+            data["switchers"][0]["name"] = payload[key]["name"]
+            data["switchers"][0]["connection_type"] = payload[key]["connection_type"]
+        else:
+            data[key] = payload[key]
 
         config.write_config(data)
+
+        print(f"Updated configuration with {payload}")
     except Exception as e:
-        print(f"Could not update configuration: {e}")
+        print(f"Could not update configuration: {e}, payload is {payload}")
         return { 'Error': f'Could not update configuration {e}' }
 
     return { 'ok': 'Configuration Saved' }

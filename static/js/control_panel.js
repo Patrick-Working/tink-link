@@ -1,3 +1,8 @@
+// Globals
+var triggerKeys = ["name", "preset", "mode", "profile"];
+var PROFILE_KEYS = 12;
+var TRIGGER_PRESETS = 12;
+
 function getValueForId(id) {
     return document.getElementById(id).value;
 }
@@ -24,6 +29,10 @@ function addEventListeners() {
 
     getElement("loading-message").style.display = 'none';
     getElement("message-box").style.display = 'none';
+
+    getElement("connection-connection_type").addEventListener("click", function(event) {
+        toggleSerialTelnet();
+    });
 
     getElement("disconnect-button").addEventListener("click", function(event) {
       event.preventDefault();
@@ -56,9 +65,19 @@ function addEventListeners() {
       updateConfig("tcpServer");
     });
 
+    getElement("connection-submit").addEventListener("click", function(event) {
+      event.preventDefault();
+      updateConfig("switcher");
+    });
+
+    getElement("trigger-submit").addEventListener("click", function(event) {
+        event.preventDefault();
+        updateConfig("trigger-form");
+    });
+
     getElement("add-trigger").addEventListener("click", function() {
         addTrigger("triggers", null);
-});
+    });
 }
 
 async function fetchConfig() {
@@ -77,13 +96,36 @@ async function fetchConfig() {
         for(var i in masterKeys) {
             k = masterKeys[i];
             for(const [key, value] of Object.entries(data[k])) {
-                getElement(`${k}-${key}`).value = value;
+                if(k == "switchers") {
+                    getElement(`${k}-${key}`)[0].value = value;
+                }
+                else {
+                    getElement(`${k}-${key}`).value = value;
+                }
             }
         }
 
         for(s in data.switchers) {
             if(data.switchers[s].enabled) {
                 var i = 1;
+
+                getElement("connection-enabled").value = data.switchers[s].enabled;
+                getElement("connection-connection_type").value = data.switchers[s].connection_type;
+                getElement("connection-type").value = data.switchers[s].type;
+                getElement("connection-name").value = data.switchers[s].name;
+                
+                if(data.switchers[s].connection_type == "telnet") {
+                    getElement("connection-hostname").value = data.switchers[s].connection.hostname;
+                    getElement("connection-port").value = data.switchers[s].connection.port;
+                    getElement("connection-username").value = data.switchers[s].connection.username;
+                    getElement("connection-password").value = data.switchers[s].connection.password;
+                    getElement("connection-init_string").value = data.switchers[s].connection.init_string;
+                }
+                else {
+                    getElement("connection-txPin").value = data.switchers[s].connection.txPin;
+                    getElement("connection-rxPin").value = data.switchers[s].connection.rxPin;
+                    getElement("connection-uartId").value = data.switchers[s].connection.uartId;
+                }
 
                 for(const [key, value] of Object.entries(data.switchers[s].triggers)) {
 
@@ -92,16 +134,18 @@ async function fetchConfig() {
                     if(x === null) {
                         addTrigger("triggers", i);
                     }
-
-                    getElement(`trigger-${i}-name`).value = value.name;
-                    getElement(`trigger-${i}-preset`).value = value.preset;
-                    getElement(`trigger-${i}-mode`).value = value.mode;
-                    getElement(`trigger-${i}-profile`).value = value.profile;
+                    triggerKeys.forEach(function(key) {
+                        getElement(`trigger-${i}-${key}`).value = value[key];
+                    });
                     
                     ++i;
                 }
             }
         }
+
+        // Determine whether to show serial/telnet for the Extron, regardless
+        // of whether the above works.
+        toggleSerialTelnet();
 
     })
     .catch(error => {
@@ -233,13 +277,26 @@ async function populateNetworks() {
 
 async function updateConfig(formName) {
 
-    path = "/save-config"
+    path = "/save-config";
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
 
+    var body = "";
+    switch(formName) {
+        case("trigger-form"):
+            body = triggersToJson();
+            break;
+        case("switcher"):
+            body = formToSwitcherConfig();
+            break;
+        default:
+            body = formToJson(formName);
+            break;
+    }
+
     const request = new Request(path, {
         method: "POST",
-        body: formToJson(formName),
+        body: body,
         headers: headers
     });
 
@@ -280,13 +337,14 @@ function addTrigger(t, num) {
 
     if(num === null) {
         num = document.getElementsByClassName("trigger-count").length;
-        num = Math.max(num, 1);
+        num = num == 0 ? 1 : Math.max(num, 1) + 1;
     }
 
     triggerRow = getElement(t);
 
     let name = document.createElement("input");
     name.id = `trigger-${num}-name`;
+    name.className += "trigger-count";
     name.name = name.id;
     name.type = "text";
 
@@ -295,13 +353,13 @@ function addTrigger(t, num) {
     let triggerPreset = document.createElement("select");
     triggerPreset.id = `trigger-${num}-preset`;
     triggerPreset.name = triggerPreset.id;
-    Array(6).keys().forEach(i => {
+    Array(TRIGGER_PRESETS).keys().forEach(i => {
         triggerPreset.append(createOption(i + 1, `Preset ${i + 1}`));
     });
 
     triggerRow.appendChild(triggerPreset);
 
-    let triggerMode = document.createElement("select")
+    let triggerMode = document.createElement("select");
     triggerMode.id = `trigger-${num}-mode`;
     triggerMode.name = triggerMode.id;
     triggerMode.append(createOption("Remote", "Remote"));
@@ -311,11 +369,59 @@ function addTrigger(t, num) {
     let triggerProfile = document.createElement("select");
     triggerProfile.id = `trigger-${num}-profile`;
     triggerProfile.name = triggerProfile.id;
-    Array(12).keys().forEach(i => {
+    Array(PROFILE_KEYS).keys().forEach(i => {
         triggerProfile.appendChild(createOption(i + 1, `Profile ${i + 1}`));
     });
 
     triggerRow.appendChild(triggerProfile);
+}
+
+function formToObject(formData) {
+    var object = {};
+
+    formData.forEach(function(value, key) {
+        try {
+            if(!isNaN(value)) {
+                object[key] = JSON.parse(value);
+            }
+            else {
+                object[key] = value;
+            }
+        }
+        catch {
+            console.log(`Failing on ${key} for ${value}`);
+        }
+    });
+
+    return object;
+}
+
+function formToSwitcherConfig() {
+    var object = {};
+
+    object.enabled = JSON.parse(getValueForId("connection-enabled"));
+    object.type = getValueForId("connection-type");
+    object.name = getValueForId("connection-name");
+    object.connection_type = getValueForId("connection-connection_type");
+    object.connection = {};
+
+    if(object.connection_type == "serial") {
+        object.connection.txPin = JSON.parse(getValueForId(("connection-txPin")));
+        object.connection.rxPin = JSON.parse(getValueForId(("connection-rxPin")));
+        object.connection.uartId = JSON.parse(getValueForId(("connection-uartId")));
+    }
+    else {
+        object.connection.hostname = getValueForId("connection-hostname");
+        object.connection.port = JSON.parse(getValueForId("connection-port"));
+        object.connection.username = getValueForId("connection-username");
+        object.connection.password = getValueForId("connection-password");
+        object.connection.init_string = getValueForId("connection-init_string");
+    }
+
+    var parent = {};
+    parent.formName = "switcher";
+    parent["switcher"] = object;
+    return JSON.stringify(parent);
 }
 
 function formToJson(formName) {
@@ -323,12 +429,51 @@ function formToJson(formName) {
     form = getElement(formName);
     formData = new FormData(form);
     formData.forEach(function(value, key) {
-        object[key] = JSON.parse(value);
+        try {
+            if(!isNaN(value)) {
+                object[key] = JSON.parse(value);
+            }
+            else {
+                object[key] = value;
+            }
+        }
+        catch {
+            console.log(`Failing on ${key} for ${value}`);
+        }
     });
 
     var parent = {};
     parent.formName = formName;
     parent[formName] = object;
+    return JSON.stringify(parent);
+}
+
+/*
+    Dump all triggers to a JSON string object.
+*/
+function triggersToJson() {
+    var array = [];
+
+    for(var i = 1; i <= getElement("triggers").childNodes.length / triggerKeys.length; ++i) {
+        
+        var object = {};
+        triggerKeys.forEach(function(key) {
+            value = getValueForId(`trigger-${i}-${key}`);
+            if(!isNaN(value)) {
+                object[key] = JSON.parse(value);
+            }
+            else {
+                object[key] = value;
+            }
+        });
+
+        array.push(object);
+    }
+
+    var parent = {};
+    parent.formName = "triggers";
+    parent["triggers"] = array;
+
     return JSON.stringify(parent);
 }
 
@@ -348,7 +493,7 @@ function toggle() {
 }
 
 function toggleSerialTelnet() {
-    var ec = getElement("extron-connection").value;
+    var ec = getElement("connection-connection_type").value;
 
     getElement("extron-serial").style.display = (ec === "serial") ? '' : 'none';
     getElement("extron-telnet").style.display = (ec === "telnet") ? '' : 'none';

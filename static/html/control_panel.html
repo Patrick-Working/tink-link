@@ -15,7 +15,7 @@
       });
     </script>
   </head>
-  <body><!--oncontextmenu="return false;"-->
+<body>
     <!-- Header -->
     <div class="header-box">
       <h1>Control Panel</h1>
@@ -124,8 +124,8 @@
       <fieldset id="tcp-server" class="form-section">
         <h3>TCP Server</h3>
         <div class="tcp-server">
-          <label for="tcp-server-enabled">Enabled:</label>
-          <label for="tcp-server-port">Port:</label>
+          <label for="tcp-server-enabled">Enabled</label>
+          <label for="tcp-server-port">Port</label>
         </div>
         <form id="tcpServer" class="tcp-server">
           
@@ -140,76 +140,84 @@
       </fieldset>
 
        <!-- Switches/Matrices -->
-      <fieldset id="switcher-form" class="form-section">
-        <h3>Switch/Matrix Configuration</h3>
+      <div id="switchers">
+        <fieldset id="switcher-form" class="form-section">
+          <h3>Switch/Matrix Configuration</h3>
 
-        <h4>Extron SW VGA</h4>
-        <div class="switcher">
-          <label for="extron-sw-vga-enabled">Enabled</label>
-          <label for="extron-type">Type</label>
-          <label for="extron-name">Name</label>
-          <label for="extron-connection">Connection</label>
-        </div>
-        <form id="extron-sw-vga" class="switcher">
-          
-          <select id="extron-sw-vga-enabled">
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
-          
-          <select id="extron-type">
-            <option value="sw-vga">SW VGA</option>
-            <option value="sw-cp">MAV/CrossPoint</option>
-          </select>
-          
-          <input type="text" id="extron-name">
+          <h4>Extron Configuration</h4>
 
-          <select id="extron-connection" onclick="toggleSerialTelnet()">
-            <option value="serial">Serial</option>
-            <option value="telnet">Telnet</option>
-          </select>
-        </form>
+          <form id="switcher">
+            <div class="switcher">
+              <label for="connection-enabled">Enabled</label>
+              <label for="connection-type">Type</label>
+              <label for="connection-name">Name</label>
+              <label for="connection-connection-type">Connection</label>
+            </div>
 
-        <div id="extron-serial">
-          <!-- should we go down to H5? -->
-          <h5>Serial Configuration</h5>
-          <div class="serial">
-            <label for="extron-tx-pin">Transmit Pin</label>
-            <label for="extron-rx-pin">Receive Pin</label>
-            <label for="extron-uart">Extron UART</label>
-          </div>
-          <div class="serial">
-            
-            <input name="txPin" id="extron-tx-pin" type="number" min="0" max="8">
-            <input name="rxPin" id="extron-rx-pin" type="number" min="0" max="8">
-            <select name="uartId" id="extron-uart">
-              <option value="0">Port 0</option>
-              <option value="1">Port 1</option>
-            </select>
-          </div>
-        </div>
+            <div class="switcher">
+              <select name="enabled" id="connection-enabled">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+              
+              <select name="type" id="connection-type">
+                <option value="ExtronSwVga">SW VGA</option>
+                <option value="ExtronMavCp">MAV/CrossPoint</option>
+              </select>
+              
+              <input name="name" type="text" id="connection-name">
 
-        <div id="extron-telnet">
-          <h5>Telnet Connection</h5>
-          <div class="telnet">
-            <label for="telnet-hostname">Hostname</label>
-            <label for="telnet-port">Port</label>
-            <label for="telnet-username">Username</label>
-            <label for="telnet-password">Password</label>
-            <label for="telnet-init-string">Init String</label>
-          </div>
-          <div class="telnet">
-            <input name="hostname" id="telnet-hostname" type="text" placeholder="192.168.0.255">
-            <input name="port" id="telnet-port" type="number" min="1" max="65535" value="23">
-            <input name="username" id="telnet-username" type="text">
-            <input name="password" id="telnet-password" type="text">
-            <input name="init_string" id="telnet-init-string" type="text">
-          </div>
-        </div>
-      </fieldset>
+              <select name="connection_type" id="connection-connection_type">
+                <option value="serial">Serial</option>
+                <option value="telnet">Telnet</option>
+              </select>
+            </div>
+
+            <div id="extron-serial">
+              <h5>Serial Configuration</h5>
+              <div class="serial">
+                <label for="connection-txPin">Transmit Pin</label>
+                <label for="connection-rxPin">Receive Pin</label>
+                <label for="connection-uartId">Extron UART</label>
+              </div>
+
+              <div class="serial">  
+                <input name="txPin" id="connection-txPin" class="serial_field" type="number" min="0" max="8">
+                <input name="rxPin" id="connection-rxPin" class="serial_field" type="number" min="0" max="8">
+                <select name="uartId" id="connection-uartId" class="serial_field">
+                  <option value="0">Port 0</option>
+                  <option value="1">Port 1</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+            <div id="extron-telnet">
+              <h5>Telnet Connection</h5>
+              <div class="telnet">
+                <label for="connection-hostname">Hostname/IP Address</label>
+                <label for="connection-port">Port</label>
+                <label for="connection-username">Username</label>
+                <label for="connection-password">Password</label>
+                <label for="connection-init_string">Init String</label>
+              </div>
+              <div class="telnet">
+                <input name="hostname" id="connection-hostname" class="telnet_field" type="text" placeholder="192.168.0.255">
+                <input name="port" id="connection-port" class="telnet_field" type="number" min="1" max="65535" value="23">
+                <input name="username" id="connection-username" class="telnet_field" type="text">
+                <input name="password" id="connection-password" class="telnet_field" type="text">
+                <input name="init_string" id="connection-init_string" class="telnet_field" type="text">
+              </div>
+
+              <button type="submit" id="connection-submit">Update</button>
+            </div>
+            </div>
+          </form>
+        </fieldset>
+      </div>
 
       <form id="trigger-form" method="POST" action="/save-triggers">
-        <fieldset class="form-section">
+        <fieldset id="trigger-fields" class="form-section">
           <h3>Triggers</h3>
 
           <button type="button" id="add-trigger">Add</button>
@@ -218,12 +226,12 @@
             <label for="trigger-name">Name</label>
             <label for="trigger-preset">Preset</label>
             <label for="trigger-mode">Mode</label>
-            <label for="trigger-profile">RT Profile</label>
+            <label for="trigger-profile">RetroTINK Profile</label>
           </div>
 
           <div id="triggers" class="trigger"></div>
           
-          <button type="submit" action="update-triggers">Update</button>
+          <button type="submit" id="trigger-submit">Update</button>
         </fieldset>
       </form>
     </div><!--content-->
